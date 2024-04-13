@@ -11,8 +11,6 @@ MAX_CLIENTS = 5
 CONN_TIME = 10
 TIMEOUT = 5
 
-results = []
-
 def print_menu():
     print("1. Get average overall yield")
     print("2. Get area under cultivation of crop")
@@ -31,8 +29,6 @@ def recv_message(conn):
             message += chunk
         except socket.error:
             print(f"Error: {socket.error}")
-
-        print(f"message = {message}<eof>")
 
         if message.startswith(b""):
             msg_length, client_id, msg = message.split(b" ", 2)
@@ -60,14 +56,28 @@ def service_send_message(key, mask, query):
         sock.send(data.msg)
         print(f"Sent query: {query}")
 
-def service_recv_message(key, mask):
+def service_recv_message(key, mask, results):
     sock = key.fileobj
     data = key.data
 
     if mask & selectors.EVENT_READ:
         client_id, result = recv_message(sock)
-        print(f"Received result: {result} from client {client_id}")
-        results.append(result)    
+        print(f"Received result: {result}")
+        # make dictionary with keys as client_id, attribute[0] and attribute[1]
+        attribute_names = result.split(" ")[0:2]
+        print("Attribute names: ", attribute_names)
+
+        for i in range(2, len(result.split(" ")), 2):
+            # break if it is out of bounds
+            if i+2 >= len(result.split(" ")):
+                break
+
+            results.append({client_id: {attribute_names[0]: result.split(" ")[i], attribute_names[1]: result.split(" ")[i+1]}})
+            print("Appended: ", {client_id: {attribute_names[0]: result.split(" ")[i], attribute_names[1]: result.split(" ")[i+1]}})
+
+
+
+
 
 def main():
     # Create a socket and bind it to the server address
@@ -99,7 +109,7 @@ def main():
         print_menu()
         choice = int(input("Enter your choice: "))
 
-        #todo: fix this
+        results = []
 
         if choice == 1:
             query = "1"
@@ -129,12 +139,13 @@ def main():
         events = sel.select(timeout=TIMEOUT)
         for key, mask in events:
             if key.data is not None:
-                service_recv_message(key, mask)
+                service_recv_message(key, mask, results)
 
         # Print the results
         print("Results:")
-        for i, result in enumerate(results):
-            print(f"{i+1}. {result}")
+        for result in results:
+            print(result)
+
 
     # Close the selector
     sel.close()

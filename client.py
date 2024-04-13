@@ -159,22 +159,22 @@ def process_query(query_num,crop):
     # Execute the query on the client's database and return the result
     if(query_num==1):
         temp = calculate_average_yield_by_year(connection)
-        res = ""
+        res = "Year Yield "
         for i in temp:
             res += i[0] + " " + i[1] + " "
     elif(query_num==2):
         temp = calculate_total_area_for_crop_by_year(connection, crop)
-        res = ""
+        res = "Year Area "
         for i in temp:
             res += i[0] + " " + i[1] + " "
     elif(query_num==3):
         temp = calculate_total_area_by_year(connection)
-        res = ""
+        res = "Year Area "
         for i in temp:
             res += i[0] + " " + i[1] + " "
     elif(query_num==4):
         temp = calculate_total_yield_for_crop_by_year(connection, crop)
-        res = ""
+        res = "Year Yield "
         for i in temp:
             res += i[0] + " " + i[1] + " "
 
