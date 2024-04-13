@@ -62,22 +62,14 @@ def service_recv_message(key, mask, results):
 
     if mask & selectors.EVENT_READ:
         client_id, result = recv_message(sock)
-        print(f"Received result: {result}")
-        # make dictionary with keys as client_id, attribute[0] and attribute[1]
-        attribute_names = result.split(" ")[0:2]
-        print("Attribute names: ", attribute_names)
 
+        attribute_names = result.split(" ")[0:2]
         for i in range(2, len(result.split(" ")), 2):
             # break if it is out of bounds
             if i+2 >= len(result.split(" ")):
                 break
 
             results.append({client_id: {attribute_names[0]: result.split(" ")[i], attribute_names[1]: result.split(" ")[i+1]}})
-            print("Appended: ", {client_id: {attribute_names[0]: result.split(" ")[i], attribute_names[1]: result.split(" ")[i+1]}})
-
-
-
-
 
 def main():
     # Create a socket and bind it to the server address
@@ -102,9 +94,12 @@ def main():
     # Stop accepting new connections
     server_socket.close()
     print("Clients have connected")
-
+    done = False
     # Proceed with the normal flow
     while True:
+        if done: 
+            break
+
         query = ""
         print_menu()
         choice = int(input("Enter your choice: "))
@@ -126,7 +121,8 @@ def main():
             query = f"4 {crop}"
 
         if choice == 5:
-            break
+            query = "5"
+            done = True
 
         events = sel.select(timeout=TIMEOUT)
         for key, mask in events:

@@ -5,6 +5,7 @@ import types
 import sys
 import psycopg2
 import sqlite3
+import pymongo
 
 # Define the client settings
 SERVER_HOST = "127.0.0.1"
@@ -88,6 +89,31 @@ def calculate_average_yield_by_year(connection, db_type):
         except sqlite3.Error as error:
             print("Error while connecting to SQLite", error)    
 
+    elif db_type == "mongo":
+        try:
+            # Connect to your MongoDB database
+            db = connection["agricultural_data"]
+            collection = db["agricultural_data"]
+
+            # Calculate average yield for each year for the last 10 years
+            average_yield_by_year = []
+            for year in range(2014, 2024):
+                total_yield = 0
+                total_area = 0
+                for data in collection.find({"year": year}):
+                    total_yield += data["yield"]
+                    total_area += data["land_area"]
+                average_yield = total_yield / total_area
+                average_yield_by_year.append((str(year), str(average_yield)))
+
+            # Close connection
+            connection.close()
+
+            # Return list of tuples containing year and average yield as strings
+            return average_yield_by_year
+
+        except pymongo.errors.PyMongoError as error:
+            print("Error while connecting to MongoDB", error)
 
 def calculate_total_area_for_crop_by_year(connection, db_type, crop_name):
     if db_type == "postgres":
@@ -144,6 +170,29 @@ def calculate_total_area_for_crop_by_year(connection, db_type, crop_name):
         except sqlite3.Error as error:
             print("Error while connecting to SQLite", error)
 
+    elif db_type == "mongo":
+        try:
+            # Connect to your MongoDB database
+            db = connection["agricultural_data"]
+            collection = db["agricultural_data"]
+
+            # Calculate total area under cultivation for the specified crop by year
+            total_area_by_year = []
+            for year in range(2014, 2024):
+                total_area = 0
+                for data in collection.find({"year": year, "crop_name": crop_name}):
+                    total_area += data["land_area"]
+                total_area_by_year.append((str(year), str(total_area)))
+
+            # Close connection
+            connection.close()
+
+            # Return list of tuples containing year and total area as strings
+            return total_area_by_year
+
+        except pymongo.errors.PyMongoError as error:
+            print("Error while connecting to MongoDB", error)
+
 
 
 def calculate_total_area_by_year(connection, db_type):
@@ -198,6 +247,29 @@ def calculate_total_area_by_year(connection, db_type):
 
         except sqlite3.Error as error:
             print("Error while connecting to SQLite", error)
+        
+    elif db_type == "mongo":
+        try:
+            # Connect to your MongoDB database
+            db = connection["agricultural_data"]
+            collection = db["agricultural_data"]
+
+            # Calculate total area under cultivation for each year
+            total_area_by_year = []
+            for year in range(2014, 2024):
+                total_area = 0
+                for data in collection.find({"year": year}):
+                    total_area += data["land_area"]
+                total_area_by_year.append((str(year), str(total_area)))
+
+            # Close connection
+            connection.close()
+
+            # Return list of tuples containing year and total area as strings
+            return total_area_by_year
+
+        except pymongo.errors.PyMongoError as error:
+            print("Error while connecting to MongoDB", error)
 
 
 def calculate_total_yield_for_crop_by_year(connection, db_type, crop_name):
@@ -255,6 +327,29 @@ def calculate_total_yield_for_crop_by_year(connection, db_type, crop_name):
         except sqlite3.Error as error:
             print("Error while connecting to SQLite", error)
 
+    elif db_type == "mongo":
+        try:
+            # Connect to your MongoDB database
+            db = connection["agricultural_data"]
+            collection = db["agricultural_data"]
+
+            # Calculate total yield for the specified crop by year
+            total_yield_by_year = []
+            for year in range(2014, 2024):
+                total_yield = 0
+                for data in collection.find({"year": year, "crop_name": crop_name}):
+                    total_yield += data["yield"]
+                total_yield_by_year.append((str(year), str(total_yield)))
+
+            # Close connection
+            connection.close()
+
+            # Return list of tuples containing year and total yield as strings
+            return total_yield_by_year
+
+        except pymongo.errors.PyMongoError as error:
+            print("Error while connecting to MongoDB", error)
+
 
 def process_query(db_type, query_num, crop):
 
@@ -277,9 +372,9 @@ def process_query(db_type, query_num, crop):
     elif db_type == "sqlite":
         connection = sqlite3.connect("agricultural_data.db")
 
-    elif db_type == "json":
-        pass
-    
+    elif db_type == "mongo":
+        connection = pymongo.MongoClient("mongodb://localhost:27017/")
+
     # Execute the query on the client's database and return the result
     if(query_num==1):
         temp = calculate_average_yield_by_year(connection, db_type)
@@ -325,7 +420,13 @@ def main():
     data = types.SimpleNamespace(msg=b"")
     sel.register(client_socket, events, data=data)
 
+    done = False
+
     while True:
+
+        if done:
+            break
+
         events = sel.select(timeout=None)
         for key, mask in events:
             sock = key.fileobj
@@ -334,16 +435,13 @@ def main():
             if mask & selectors.EVENT_READ:
                 # Receive the query from the server (in the format "length query")
                 query = recv_query(sock)
-                
-                if(query=="Error"):
-                    break
-
-                print(f"Received query: {query}")
-
+            
                 # Execute the query on the client's database and send the result to the server
                 tokenised_query = query.split(" ")
-                print(tokenised_query)
                 query_num = int(tokenised_query[0])
+                if query_num == 5: 
+                    done = True
+                    break
                 crop = None
                 if(query_num%2==0):
                     crop = tokenised_query[1]
@@ -356,6 +454,10 @@ def main():
                     sock.send(data.msg)
                     print(f"Sent result: {result}")
                     data.msg = None
+
+    sel.unregister(sock)
+    sock.close()
+
 
 
 if __name__ == "__main__":
