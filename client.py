@@ -18,26 +18,21 @@ def recv_query(sock):
                 break
             query += chunk
         except socket.error:
-            print(f"Server has closed")
+            print("Server has closed")
 
         if query.startswith(""):
-            msg_length, query = query.split(" ", 1)
-            if len(query) >= int(msg_length):
-                break
+            try: 
+                msg_length, query = query.split(" ", 1)
+                if len(query) >= int(msg_length):
+                    break
+            except:
+                print("Server has closed")
+                return "Error"
 
     return query
 
-def calculate_average_yield_by_year():
+def calculate_average_yield_by_year(connection):
     try:
-        # Connect to your PostgreSQL database
-        connection = psycopg2.connect(
-            dbname="postgres",
-            user="postgres",
-            password="password",
-            host="127.0.0.1",
-            port="5432"
-        )
-
         cursor = connection.cursor()
 
         # SQL query to calculate average yield for each year for the last 10 years
@@ -63,17 +58,8 @@ def calculate_average_yield_by_year():
         print("Error while connecting to PostgreSQL", error)
 
 
-def calculate_total_area_for_crop_by_year(crop_name):
+def calculate_total_area_for_crop_by_year(connection, crop_name):
     try:
-        # Connect to your PostgreSQL database
-        connection = psycopg2.connect(
-            dbname="postgres",
-            user="postgres",
-            password="password",
-            host="127.0.0.1",
-            port="5432"
-        )
-
         cursor = connection.cursor()
 
         # SQL query to calculate total area under cultivation for the specified crop by year
@@ -100,17 +86,8 @@ def calculate_total_area_for_crop_by_year(crop_name):
 
 
 
-def calculate_total_area_by_year():
+def calculate_total_area_by_year(connection):
     try:
-        # Connect to your PostgreSQL database
-        connection = psycopg2.connect(
-            dbname="postgres",
-            user="postgres",
-            password="password",
-            host="127.0.0.1",
-            port="5432"
-        )
-
         cursor = connection.cursor()
 
         # SQL query to calculate total area under cultivation for each year
@@ -135,17 +112,8 @@ def calculate_total_area_by_year():
         print("Error while connecting to PostgreSQL", error)
 
 
-def calculate_total_yield_for_crop_by_year(crop_name):
+def calculate_total_yield_for_crop_by_year(connection, crop_name):
     try:
-        # Connect to your PostgreSQL database
-        connection = psycopg2.connect(
-            dbname="postgres",
-            user="postgres",
-            password="password",
-            host="127.0.0.1",
-            port="5432"
-        )
-
         cursor = connection.cursor()
 
         # SQL query to calculate total yield for the specified crop by year
@@ -172,24 +140,40 @@ def calculate_total_yield_for_crop_by_year(crop_name):
 
 
 def process_query(query_num,crop):
+    # Connect to your PostgreSQL database
+    # connection = psycopg2.connect(
+    #     dbname="postgres",
+    #     user="postgres",
+    #     password="password",
+    #     host="127.0.0.1",
+    #     port="5432"
+    # )
+
+    connection = psycopg2.connect(
+        host="10.5.18.70",
+        database="21CS30009",
+        user="21CS30009",
+        password="21CS30009"
+    )
+    
     # Execute the query on the client's database and return the result
     if(query_num==1):
-        temp = calculate_average_yield_by_year()
+        temp = calculate_average_yield_by_year(connection)
         res = ""
         for i in temp:
             res += i[0] + " " + i[1] + " "
     elif(query_num==2):
-        temp = calculate_total_area_for_crop_by_year(crop)
+        temp = calculate_total_area_for_crop_by_year(connection, crop)
         res = ""
         for i in temp:
             res += i[0] + " " + i[1] + " "
     elif(query_num==3):
-        temp = calculate_total_area_by_year()
+        temp = calculate_total_area_by_year(connection)
         res = ""
         for i in temp:
             res += i[0] + " " + i[1] + " "
     elif(query_num==4):
-        temp = calculate_total_yield_for_crop_by_year(crop)
+        temp = calculate_total_yield_for_crop_by_year(connection, crop)
         res = ""
         for i in temp:
             res += i[0] + " " + i[1] + " "
@@ -202,6 +186,8 @@ def main():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((SERVER_HOST, SERVER_PORT))
     client_socket.setblocking(False)
+
+    print("Client ID:", client_id)
 
     sel = selectors.DefaultSelector()
     events = selectors.EVENT_READ | selectors.EVENT_WRITE
@@ -217,10 +203,13 @@ def main():
             if mask & selectors.EVENT_READ:
                 # Receive the query from the server (in the format "length query")
                 query = recv_query(sock)
+                
+                if(query=="Error"):
+                    break
+
                 print(f"Received query: {query}")
 
                 # Execute the query on the client's database and send the result to the server
-                #todo: change this
                 tokenised_query = query.split(" ")
                 print(tokenised_query)
                 query_num = int(tokenised_query[0])
@@ -229,7 +218,7 @@ def main():
                     crop = tokenised_query[1]
                 result = process_query(query_num, crop)
 
-                data.msg = f"{len(result)} {result}".encode()
+                data.msg = f"{len(result)} {client_id} {result}".encode()
 
             if mask & selectors.EVENT_WRITE:
                 if data.msg:

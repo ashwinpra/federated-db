@@ -24,20 +24,34 @@ def generate_data():
 
 # Function to insert data into PostgreSQL
 def insert_data(data):
+    # conn = psycopg2.connect(
+    #     dbname="postgres",
+    #     user="postgres",
+    #     password="password",
+    #     host="127.0.0.1",
+    #     port="5432"
+    # )
+
     conn = psycopg2.connect(
-        dbname="postgres",
-        user="postgres",
-        password="password",
-        host="127.0.0.1",
-        port="5432"
+        host="10.5.18.70",
+        database="21CS30009",
+        user="21CS30009",
+        password="21CS30009"
     )
+
     cur = conn.cursor()
+    # make a table named agricultural_data
+    cur.execute("CREATE TABLE IF NOT EXISTS agricultural_data (farmer_name VARCHAR(50), crop_name VARCHAR(50), land_area FLOAT, year INT, yield FLOAT)")
     for entry in data:
         cur.execute("INSERT INTO agricultural_data (farmer_name, crop_name, land_area, year, yield) VALUES (%s, %s, %s, %s, %s)", entry)
     conn.commit()
     cur.close()
     conn.close()
 
-# Call functions to generate and insert data
-data = generate_data()
-insert_data(data)
+def main():
+    # Call functions to generate and insert data
+    data = generate_data()
+    insert_data(data)
+
+if __name__ == "__main__":
+    main()
