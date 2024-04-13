@@ -7,16 +7,16 @@ import time
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 8000
 MAX_CLIENTS = 5
-CONN_TIME = 20
+CONN_TIME = 10
 
 results = []
 
 def print_menu():
     #todo: change these 
     print("1. Get average overall yield")
-    print("2. Get average yield in a given year")
-    print("3. Get types of crops")
-    print("4. Get average yield of a given crop")
+    print("2. Get area under cultivation of crop")
+    print("3. Get total area under cultivation")
+    print("4. Get total yield of crop")
     print("5. Exit")
 
 def recv_message(conn):
@@ -106,18 +106,18 @@ def main():
         #todo: fix this
 
         if choice == 1:
-            query = "SELECT AVG(yield) FROM crops"
+            query = "1"
 
         elif choice == 2:
-            year = int(input("Enter the year: "))
-            query = f"SELECT AVG(yield) FROM crops WHERE year = {year}"
+            crop = (input("Enter the crop: "))
+            query = f"2 {crop}"
 
         elif choice == 3:
-            query = "SELECT DISTINCT crop FROM crops"
+            query = "3"
 
         elif choice == 4:
             crop = input("Enter the crop: ")
-            query = f"SELECT AVG(yield) FROM crops WHERE crop = '{crop}'"
+            query = f"4 {crop}"
 
         if choice == 5:
             break
