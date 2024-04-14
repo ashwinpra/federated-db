@@ -9,7 +9,7 @@ import pymongo
 
 # Define the client settings
 SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 8000
+SERVER_PORT = 8002
 
 def recv_query(sock):
     # Receive the query from the server (in the format "length query") - query is a string

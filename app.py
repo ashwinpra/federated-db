@@ -45,7 +45,7 @@ def accept_wrapper(sel, sock):
 
 # Define the server settings
 SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 8000
+SERVER_PORT = 8002
 MAX_CLIENTS = 5
 CONN_TIME = 10
 TIMEOUT = 20
@@ -140,7 +140,7 @@ def get_query_output(choice, crop, year):
         headers[key] = key
 
     print(tabulate(results, headers=headers))
-    return results
+    return results, headers
 class QueryInterface(customtkinter.CTk):
     def __init__(self):
         super().__init__()
@@ -179,7 +179,7 @@ class QueryInterface(customtkinter.CTk):
         self.submit_button.pack(padx=20, pady=10)
 
         # Create a frame for displaying the query result
-        self.result_frame = customtkinter.CTkFrame(self, height=100, width=600,border_width=2)
+        self.result_frame = customtkinter.CTkFrame(self, height=300, width=600,border_width=2)
         self.result_frame.pack(padx=20, pady=20)
         self.result_label = customtkinter.CTkLabel(self.result_frame, text="", anchor="w", justify="left")
         self.result_label.place(relx=0.5, rely=0.5, anchor="center")
@@ -189,19 +189,15 @@ class QueryInterface(customtkinter.CTk):
         year = self.value_entry2.get()
         selected_query = self.query_var.get()
         query = queries.index(selected_query) + 1
-        results = get_query_output(query, crop, year)
-        self.display_result(results)
+        results, headers = get_query_output(query, crop, year)
+        self.display_result(tabulate(results, headers=headers))
 
     def display_result(self, result, error=False):
         if error:
-            self.result_label.config(text=f"Error: {result}")
+            self.result_label.configure(text=f"Error: {result}")
         else:
-            self.result_label.config(text=f"Result: {result}")
+            self.result_label.configure(text=f"Result: {result}")
 
-
-if __name__ == "__main__":
-    app = QueryInterface()
-    app.mainloop()
 
 if __name__ == "__main__":
     app = QueryInterface()
