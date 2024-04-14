@@ -43,10 +43,10 @@ def recv_message(conn, cipher):
         if len(data) < 1024:
             break
 
-    print("Received message:", message)
+    # print("Received message:", message)
     decrypted_message = cipher.decrypt(message)
     decrypted_message = remove_padding(decrypted_message.decode())
-    print("Decrypted message:", decrypted_message)
+    # print("Decrypted message:", decrypted_message)
 
     return decrypted_message
 
@@ -73,14 +73,14 @@ def service_send_message(key, mask, query):
     iv = data.iv
 
     cipher = AES.new(key.encode(), AES.MODE_CFB, iv.encode())
-    print("key:", key, "iv:", iv)
+    # print("key:", key, "iv:", iv)
 
     if mask & selectors.EVENT_WRITE:
         data.msg = cipher.encrypt(pad_message(query).encode())
         sock.send(data.msg)
-        print("data.msg:", data.msg)
-        print("Encrypted message:", pad_message(query).encode())
-        print(f"Sent query: {query}")
+        # print("data.msg:", data.msg)
+        # print("Encrypted message:", pad_message(query).encode())
+        # print(f"Sent query: {query}")
 
 def service_recv_message(key, mask, results):
     sock = key.fileobj
@@ -96,9 +96,9 @@ def service_recv_message(key, mask, results):
         attribute_names = result.split(" ")[0:2]
         for i in range(2, len(result.split(" ")), 2):
             # break if it is out of bounds
-            if i+2 >= len(result.split(" ")):
+            if i+1 >= len(result.split(" ")):
                 break
-
+            
             results.append({"client_id": client_id, attribute_names[0]: result.split(" ")[i], attribute_names[1]: result.split(" ")[i+1]})
 
 def main():
@@ -189,12 +189,19 @@ def main():
                 service_recv_message(key, mask, results)
 
         # Print the results
-        print("Results:")
+        print("\nResults:")
+        print("="*20)
         headers = {}
+        if len(results) == 0:
+            print("No results found")
+            print()
+            continue
+
         for key in results[0].keys():
             headers[key] = key
 
         print(tabulate(results, headers=headers))
+        print()
 
 
     # Close the selector

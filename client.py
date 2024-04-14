@@ -12,8 +12,8 @@ import Crypto.Cipher.AES as AES
 # Define the client settings
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 8000
-e_cipher = None 
-d_cipher = None
+enc_key = os.urandom(8).hex()
+iv = os.urandom(8).hex()
 
 def pad_message(message):
     # Pad the message to be a multiple of 16 bytes
@@ -24,7 +24,10 @@ def remove_padding(message):
     return message.rstrip()
 
 def recv_query(sock):
-    global d_cipher
+    global enc_key, iv
+
+    d_cipher = AES.new(enc_key.encode(), AES.MODE_CFB, iv.encode())
+
     # query will be in the format "query"
     query = b""
     while True:
@@ -34,24 +37,23 @@ def recv_query(sock):
         if len(data) < 1024:
             break
 
-    print("Received query:", query)
+    # print("Received query:", query)
     decrypted_query = d_cipher.decrypt(query)
-    print("Decrypted query:", decrypted_query)
-    decrypted_query = remove_padding(decrypted_query)
+    # print("Decrypted query:", decrypted_query)
+    decrypted_query = remove_padding(decrypted_query).decode()
 
-
-    return decrypted_query.decode()
+    return decrypted_query
 
 def calculate_average_yield_by_year(connection, db_type):
     if db_type == "postgres":
         try:
             cursor = connection.cursor()
 
-            # SQL query to calculate average yield for each year for the last 10 years
+            # SQL query to calculate average yield for each year for the last 10 years (2014-2023)
             query = """
                 SELECT year, SUM(yield) / SUM(land_area) AS average_yield
                 FROM agricultural_data
-                WHERE year >= EXTRACT(YEAR FROM CURRENT_DATE) - 9
+                WHERE year >= EXTRACT(YEAR FROM CURRENT_DATE) - 10
                 GROUP BY year
                 ORDER BY year
             """
@@ -79,7 +81,7 @@ def calculate_average_yield_by_year(connection, db_type):
             query = """
                 SELECT year, SUM(yield) / SUM(land_area) AS average_yield
                 FROM agricultural_data
-                WHERE year >= strftime('%Y', 'now') - 9
+                WHERE year >= strftime('%Y', 'now') - 10
                 GROUP BY year
                 ORDER BY year
             """
@@ -370,6 +372,9 @@ def calculate_total_yield_for_crop_for_year(connection, db_type, crop_name, year
     if db_type == "postgres":
         try:
             cursor = connection.cursor()
+
+            # print all the data
+            cursor.execute("SELECT * FROM agricultural_data")
 
             # SQL query to calculate yield for the specified crop for a particular year
             query = """
@@ -748,7 +753,7 @@ def process_query(db_type, query_num, crop,year = None):
     return res
         
 def main():
-    global e_cipher, d_cipher
+    global enc_key, iv
 
     # take type of database as command line argument 
     if len(sys.argv) != 2:
@@ -770,20 +775,18 @@ def main():
     data = types.SimpleNamespace(msg=b"")
     sel.register(client_socket, events, data=data)
 
-    key = os.urandom(8).hex()
-    iv = os.urandom(8).hex()
-    e_cipher = AES.new(key.encode(), AES.MODE_CFB, iv.encode())
-    d_cipher = AES.new(key.encode(), AES.MODE_CFB, iv.encode())
-
-    print("key:", key, "iv:", iv)
+    # print("key:", enc_key, "iv:", iv)
 
     # Send the client ID, key and IV to the server
-    msg = f"{client_id} {key} {iv}".encode()
+    msg = f"{client_id} {enc_key} {iv}".encode()
     client_socket.send(msg)
 
     done = False
 
+
     while True:
+
+        e_cipher = AES.new(enc_key.encode(), AES.MODE_CFB, iv.encode())
 
         if done:
             break
@@ -811,15 +814,16 @@ def main():
                     year = tokenised_query[2]
                 if(query_num==9):
                     year = tokenised_query[1]
-                result = process_query(db_type, query_num, crop,year)
+                result = process_query(db_type, query_num, crop, year)
+                # print("Result:", result)
 
                 data.msg = e_cipher.encrypt(pad_message(result).encode())
 
             if mask & selectors.EVENT_WRITE:
                 if data.msg:
                     sock.send(data.msg)
-                    print("data.msg:", data.msg)
-                    print(f"Sent result: {result}")
+                    # print("data.msg:", data.msg)
+                    # print(f"Sent result: {result}")
                     data.msg = None
 
     sel.unregister(sock)
