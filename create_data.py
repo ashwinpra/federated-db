@@ -17,7 +17,6 @@ def generate_data():
         
         # Generating land area from a normal distribution with mean 5 and standard deviation 2
        
-        
         for year in range(2014, 2024):  # Generating data for each year from 2014 to 2023
             # Generating yield for the year from a normal distribution
             land = round(max(0.5, min(10, np.random.normal(5, 2))), 2)
