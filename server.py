@@ -11,7 +11,7 @@ SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 8000
 MAX_CLIENTS = 5
 CONN_TIME = 10
-TIMEOUT = 5
+TIMEOUT = 20
 
 def print_menu():
     print("1. Get average overall yield")
@@ -21,7 +21,8 @@ def print_menu():
     print("5. Get the yield of crop for a particular year")
     print("6. Get the yield of a crop of the current year")
     print("7. Get the year with the highest yield for a crop")
-    print("8. Get the year with the highest yield for a district")
+    print("8. Get the year with the highest yield for all districts")
+    print("9. Get the crop with the highest yield for all districts for a particular year")
     print("10. Exit")
 
 def recv_message(conn):
@@ -68,7 +69,7 @@ def service_recv_message(key, mask, results):
 
     if mask & selectors.EVENT_READ:
         client_id, result = recv_message(sock)
-
+        print(result)
         attribute_names = result.split(" ")[0:2]
         for i in range(2, len(result.split(" ")), 2):
             # break if it is out of bounds
@@ -134,6 +135,9 @@ def main():
             query = f"7 {crop}"
         elif choice == 8:
             query = f"8"
+        elif choice == 9:
+            year = input("Enter the year: ")
+            query = f"9 {year}"
         if choice == 10:
             query = "10"
             done = True
@@ -156,6 +160,7 @@ def main():
 
         # Print the results
         print("Results:")
+        print(results)
         headers = {}
         for key in results[0].keys():
             headers[key] = key
