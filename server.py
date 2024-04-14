@@ -18,7 +18,11 @@ def print_menu():
     print("2. Get area under cultivation of crop")
     print("3. Get total area under cultivation")
     print("4. Get total yield of crop")
-    print("5. Exit")
+    print("5. Get the yield of crop for a particular year")
+    print("6. Get the yield of a crop of the current year")
+    print("7. Get the year with the highest yield for a crop")
+    print("8. Get the year with the highest yield for a district")
+    print("10. Exit")
 
 def recv_message(conn):
     # message will be in the format "message_length client_id message"
@@ -118,9 +122,20 @@ def main():
         elif choice == 4:
             crop = input("Enter the crop: ")
             query = f"4 {crop}"
-
-        if choice == 5:
-            query = "5"
+        elif choice == 5:
+            crop = input("Enter the crop: ")
+            year = input("Enter the year: ")
+            query = f"5 {crop} {year}"
+        elif choice == 6:
+            crop = input("Enter the crop: ")
+            query = f"6 {crop}"
+        elif choice == 7:
+            crop = input("Enter the crop: ")
+            query = f"7 {crop}"
+        elif choice == 8:
+            query = f"8"
+        if choice == 10:
+            query = "10"
             done = True
 
         events = sel.select(timeout=TIMEOUT)
