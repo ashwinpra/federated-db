@@ -2,6 +2,8 @@ import random
 import numpy as np
 import psycopg2
 import sys
+from pymongo import MongoClient
+import sqlite3
 
 # Function to generate random data
 def generate_data():
@@ -43,19 +45,25 @@ def insert_data_postgres(data):
     cur = conn.cursor()
     # make a table named agricultural_data
     cur.execute("CREATE TABLE IF NOT EXISTS agricultural_data (farmer_name VARCHAR(50), crop_name VARCHAR(50), land_area FLOAT, year INT, yield FLOAT)")
+
+    # clear the table
+    cur.execute("DELETE FROM agricultural_data")
+    
     for entry in data:
         cur.execute("INSERT INTO agricultural_data (farmer_name, crop_name, land_area, year, yield) VALUES (%s, %s, %s, %s, %s)", entry)
     conn.commit()
     cur.close()
     conn.close()
 
-from pymongo import MongoClient
-
 # Function to insert data into MongoDB
 def insert_data_mongodb(data):
     client = MongoClient('mongodb://localhost:27017/')
     db = client['agricultural_data']
     collection = db['agricultural_data']
+
+    # clear the collection
+    collection.delete_many({})
+
     for entry in data:
         collection.insert_one({
             'farmer_name': entry[0],
@@ -65,14 +73,18 @@ def insert_data_mongodb(data):
             'yield': entry[4]
         })
 
+    client.close()
 
-import sqlite3
 
 # Function to insert data into SQLite
 def insert_data_sqlite(data):
     conn = sqlite3.connect('agricultural_data.db')
     cur = conn.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS agricultural_data (farmer_name TEXT, crop_name TEXT, land_area REAL, year INTEGER, yield REAL)")
+
+    # clear the table
+    cur.execute("DELETE FROM agricultural_data")
+
     for entry in data:
         cur.execute("INSERT INTO agricultural_data (farmer_name, crop_name, land_area, year, yield) VALUES (?, ?, ?, ?, ?)", entry)
     conn.commit()
@@ -81,7 +93,7 @@ def insert_data_sqlite(data):
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python3 create_data.py <postgres/sqlite/json>")
+        print("Usage: python3 create_data.py <postgres/sqlite/mongo>")
         sys.exit(1)
 
     db_type = sys.argv[1]
@@ -89,11 +101,10 @@ def main():
 
     if db_type == 'postgres':
         insert_data_postgres(data)
-    elif db_type == 'mongodb':
-        insert_data_mongodb(data)
     elif db_type == 'sqlite':
         insert_data_sqlite(data)
-    # insert_data(data)
+    elif db_type == 'mongodb':
+        insert_data_mongodb(data)
 
 if __name__ == "__main__":
     main()
