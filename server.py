@@ -2,6 +2,8 @@ import socket
 import selectors
 import types
 import time
+from tabulate import tabulate
+import pickle
 
 
 # Define the server settings
@@ -69,7 +71,7 @@ def service_recv_message(key, mask, results):
             if i+2 >= len(result.split(" ")):
                 break
 
-            results.append({client_id: {attribute_names[0]: result.split(" ")[i], attribute_names[1]: result.split(" ")[i+1]}})
+            results.append({"client_id": client_id, attribute_names[0]: result.split(" ")[i], attribute_names[1]: result.split(" ")[i+1]})
 
 def main():
     # Create a socket and bind it to the server address
@@ -97,9 +99,6 @@ def main():
     done = False
     # Proceed with the normal flow
     while True:
-        if done: 
-            break
-
         query = ""
         print_menu()
         choice = int(input("Enter your choice: "))
@@ -129,6 +128,9 @@ def main():
             if key.data is not None:
                 service_send_message(key, mask, query)
 
+        if done: 
+            break
+
         time.sleep(1)
         
         # wait to receive the results from the clients
@@ -139,8 +141,11 @@ def main():
 
         # Print the results
         print("Results:")
-        for result in results:
-            print(result)
+        headers = {}
+        for key in results[0].keys():
+            headers[key] = key
+
+        print(tabulate(results, headers=headers))
 
 
     # Close the selector

@@ -91,16 +91,23 @@ def calculate_average_yield_by_year(connection, db_type):
 
     elif db_type == "mongo":
         try:
+
             # Connect to your MongoDB database
             db = connection["agricultural_data"]
             collection = db["agricultural_data"]
 
+            for data in collection.find():
+                print(data)
+
+            print("Connected to MongoDB")
             # Calculate average yield for each year for the last 10 years
             average_yield_by_year = []
             for year in range(2014, 2024):
                 total_yield = 0
                 total_area = 0
                 for data in collection.find({"year": year}):
+                    print(f"total_yield: {total_yield}, total_area: {total_area}")
+                    
                     total_yield += data["yield"]
                     total_area += data["land_area"]
                 average_yield = total_yield / total_area
