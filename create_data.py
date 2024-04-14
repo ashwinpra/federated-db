@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import psycopg2
+import sys
 
 # Function to generate random data
 def generate_data():
@@ -23,7 +24,7 @@ def generate_data():
     return data
 
 # Function to insert data into PostgreSQL
-def insert_data(data):
+def insert_data_postgres(data):
     # conn = psycopg2.connect(
     #     dbname="postgres",
     #     user="postgres",
@@ -48,10 +49,51 @@ def insert_data(data):
     cur.close()
     conn.close()
 
+from pymongo import MongoClient
+
+# Function to insert data into MongoDB
+def insert_data_mongodb(data):
+    client = MongoClient('mongodb://localhost:27017/')
+    db = client['agricultural_data']
+    collection = db['agricultural_data']
+    for entry in data:
+        collection.insert_one({
+            'farmer_name': entry[0],
+            'crop_name': entry[1],
+            'land_area': entry[2],
+            'year': entry[3],
+            'yield': entry[4]
+        })
+
+
+import sqlite3
+
+# Function to insert data into SQLite
+def insert_data_sqlite(data):
+    conn = sqlite3.connect('agricultural_data.db')
+    cur = conn.cursor()
+    cur.execute("CREATE TABLE IF NOT EXISTS agricultural_data (farmer_name TEXT, crop_name TEXT, land_area REAL, year INTEGER, yield REAL)")
+    for entry in data:
+        cur.execute("INSERT INTO agricultural_data (farmer_name, crop_name, land_area, year, yield) VALUES (?, ?, ?, ?, ?)", entry)
+    conn.commit()
+    conn.close()
+
+
 def main():
-    # Call functions to generate and insert data
+    if len(sys.argv) != 2:
+        print("Usage: python3 create_data.py <postgres/sqlite/json>")
+        sys.exit(1)
+
+    db_type = sys.argv[1]
     data = generate_data()
-    insert_data(data)
+
+    if db_type == 'postgres':
+        insert_data_postgres(data)
+    elif db_type == 'mongodb':
+        insert_data_mongodb(data)
+    elif db_type == 'sqlite':
+        insert_data_sqlite(data)
+    # insert_data(data)
 
 if __name__ == "__main__":
     main()
