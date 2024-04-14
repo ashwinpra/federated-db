@@ -1,0 +1,10 @@
+queries = [ "1. Get average overall yield",
+    "2. Get area under cultivation of crop",
+    "3. Get total area under cultivation",
+    "4. Get total yield of crop",
+    "5. Get the yield of crop for a particular year",
+    "6. Get the yield of a crop of the current year",
+    "7. Get the year with the highest yield for a crop",
+    "8. Get the year with the highest yield for all districts",
+    "9. Get the crop with the highest yield for all districts for a particular year",
+    "10. Exit"]
