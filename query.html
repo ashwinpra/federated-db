@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Query</title>
+</head>
+<body>
+    <h1>Select Query</h1>
+    <form action="{{ url_for('query_page') }}" method="post">
+        <label for="query">Select a query:</label>
+        <select name="query" id="query">
+            <option value="1">Get average overall yield</option>
+            <option value="2">Get area under cultivation of crop</option>
+            <option value="3">Get total area under cultivation</option>
+            <option value="4">Get total yield of crop</option>
+        </select>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>

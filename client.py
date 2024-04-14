@@ -6,33 +6,41 @@ import sys
 import psycopg2
 import sqlite3
 import pymongo
+import os 
+import Crypto.Cipher.AES as AES
 
 # Define the client settings
 SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 8002
+SERVER_PORT = 8000
+e_cipher = None 
+d_cipher = None
+
+def pad_message(message):
+    # Pad the message to be a multiple of 16 bytes
+    return message + " " * (16 - len(message) % 16)
+
+def remove_padding(message):
+    # Remove the padding from the message
+    return message.rstrip()
 
 def recv_query(sock):
-    # Receive the query from the server (in the format "length query") - query is a string
-    query = ""
+    global d_cipher
+    # query will be in the format "query"
+    query = b""
     while True:
-        try:
-            chunk = sock.recv(1024).decode()
-            if not chunk:
-                break
-            query += chunk
-        except socket.error:
-            print("Server has closed")
+        # receive until the query is complete
+        data = sock.recv(1024)
+        query += data
+        if len(data) < 1024:
+            break
 
-        if query.startswith(""):
-            try: 
-                msg_length, query = query.split(" ", 1)
-                if len(query) >= int(msg_length):
-                    break
-            except:
-                print("Server has closed")
-                return "Error"
+    print("Received query:", query)
+    decrypted_query = d_cipher.decrypt(query)
+    print("Decrypted query:", decrypted_query)
+    decrypted_query = remove_padding(decrypted_query)
 
-    return query
+
+    return decrypted_query.decode()
 
 def calculate_average_yield_by_year(connection, db_type):
     if db_type == "postgres":
@@ -740,6 +748,8 @@ def process_query(db_type, query_num, crop,year = None):
     return res
         
 def main():
+    global e_cipher, d_cipher
+
     # take type of database as command line argument 
     if len(sys.argv) != 2:
         print("Usage: python3 client.py <postgres/sqlite/json>")
@@ -759,6 +769,17 @@ def main():
     events = selectors.EVENT_READ | selectors.EVENT_WRITE
     data = types.SimpleNamespace(msg=b"")
     sel.register(client_socket, events, data=data)
+
+    key = os.urandom(8).hex()
+    iv = os.urandom(8).hex()
+    e_cipher = AES.new(key.encode(), AES.MODE_CFB, iv.encode())
+    d_cipher = AES.new(key.encode(), AES.MODE_CFB, iv.encode())
+
+    print("key:", key, "iv:", iv)
+
+    # Send the client ID, key and IV to the server
+    msg = f"{client_id} {key} {iv}".encode()
+    client_socket.send(msg)
 
     done = False
 
@@ -792,11 +813,12 @@ def main():
                     year = tokenised_query[1]
                 result = process_query(db_type, query_num, crop,year)
 
-                data.msg = f"{len(result)} {client_id} {result}".encode()
+                data.msg = e_cipher.encrypt(pad_message(result).encode())
 
             if mask & selectors.EVENT_WRITE:
                 if data.msg:
                     sock.send(data.msg)
+                    print("data.msg:", data.msg)
                     print(f"Sent result: {result}")
                     data.msg = None
 
