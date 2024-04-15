@@ -11,7 +11,7 @@ import Crypto.Cipher.AES as AES
 
 # Define the client settings
 SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 8001
+SERVER_PORT = 8012
 enc_key = os.urandom(8).hex()
 iv = os.urandom(8).hex()
 
@@ -712,7 +712,10 @@ def process_query(db_type, query_num, crop,year = None):
 
     elif db_type == "sqlite":
         connection = sqlite3.connect("agricultural_data.db")
-        print("Connected to SQLite")
+        if connection:
+            print("Connected to SQLite")
+        else:
+            print("Error while connecting to SQLite")
 
     elif db_type == "mongo":
         connection = pymongo.MongoClient("mongodb://localhost:27017/")

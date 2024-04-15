@@ -36,9 +36,9 @@ def insert_data_postgres(data):
 
     conn = psycopg2.connect(
         host="10.5.18.70",
-        database="21CS30009",
-        user="21CS30009",
-        password="21CS30009"
+        database="21CS30038",
+        user="21CS30038",
+        password="21CS30038"
     )
 
     cur = conn.cursor()

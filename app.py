@@ -13,8 +13,8 @@ import Crypto.Cipher.AES as AES
 from queries import queries
 
 # Define the server settings
-SERVER_HOST = "10.145.38.202"
-SERVER_PORT = 8000
+SERVER_HOST = "127.0.0.1"
+SERVER_PORT = 8001
 MAX_CLIENTS = 5
 CONN_TIME = 10
 TIMEOUT = 20

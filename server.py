@@ -4,12 +4,15 @@ import types
 import time
 from tabulate import tabulate
 import Crypto.Cipher.AES as AES
-
+import matplotlib.pyplot as plt
+plt.style.use(['science', 'notebook', 'grid'])
+plt.rc('font', family='serif')
+plt.rc('text', usetex=True)
 # Define the server settings
 SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 8001
+SERVER_PORT = 8012
 MAX_CLIENTS = 5
-CONN_TIME = 10
+CONN_TIME = 20
 TIMEOUT = 20
 num_clients = 0
 
@@ -100,6 +103,18 @@ def service_recv_message(key, mask, results):
                 break
             
             results.append({"client_id": client_id, attribute_names[0]: result.split(" ")[i], attribute_names[1]: result.split(" ")[i+1]})
+
+def plot_plots(results, crop, year):
+    print(results)
+    # bar graph with values
+    # plt.bar(years, yield_values, label="Yield")
+    # plt.xlabel("Year")
+    # plt.ylabel("Yield")
+    # plt.title(f"Yield of {crop} in District {district}")
+    # plt.legend()
+    # plt.savefig(f"q4_{district}.png")
+    # plt.show()
+
 
 def main():
     global num_clients
@@ -201,7 +216,7 @@ def main():
             headers[key] = key
 
         print(tabulate(results, headers=headers))
-        print()
+        plot_plots(results, crop, year)
 
 
     # Close the selector
