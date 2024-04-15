@@ -6,10 +6,10 @@ from tabulate import tabulate
 import Crypto.Cipher.AES as AES
 
 # Define the server settings
-SERVER_HOST = "127.0.0.1"
+SERVER_HOST = "10.145.254.177"
 SERVER_PORT = 8000
 MAX_CLIENTS = 5
-CONN_TIME = 5
+CONN_TIME = 10
 TIMEOUT = 20
 num_clients = 0
 

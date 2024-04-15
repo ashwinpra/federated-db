@@ -10,7 +10,7 @@ import os
 import Crypto.Cipher.AES as AES
 
 # Define the client settings
-SERVER_HOST = "127.0.0.1"
+SERVER_HOST = "10.145.254.177"
 SERVER_PORT = 8000
 enc_key = os.urandom(8).hex()
 iv = os.urandom(8).hex()
@@ -48,7 +48,6 @@ def calculate_average_yield_by_year(connection, db_type):
     if db_type == "postgres":
         try:
             cursor = connection.cursor()
-
             # SQL query to calculate average yield for each year for the last 10 years (2014-2023)
             query = """
                 SELECT year, SUM(yield) / SUM(land_area) AS average_yield
@@ -101,7 +100,6 @@ def calculate_average_yield_by_year(connection, db_type):
 
     elif db_type == "mongo":
         try:
-
             # Connect to your MongoDB database
             db = connection["agricultural_data"]
             collection = db["agricultural_data"]
@@ -700,12 +698,15 @@ def process_query(db_type, query_num, crop,year = None):
             user="21CS30009",
             password="21CS30009"
         )
+        print("Connected to PostgreSQL")
 
     elif db_type == "sqlite":
         connection = sqlite3.connect("agricultural_data.db")
+        print("Connected to SQLite")
 
     elif db_type == "mongo":
         connection = pymongo.MongoClient("mongodb://localhost:27017/")
+        print("Connected to MongoDB")
 
     # Execute the query on the client's database and return the result
     if(query_num==1):
@@ -750,6 +751,8 @@ def process_query(db_type, query_num, crop,year = None):
         res = "Crop Yield "
         for i in temp:
             res += i[0] + " " + i[1] + " "
+
+    print("Result found")
     return res
         
 def main():
@@ -781,8 +784,9 @@ def main():
     msg = f"{client_id} {enc_key} {iv}".encode()
     client_socket.send(msg)
 
-    done = False
+    print("Connected to the server")
 
+    done = False
 
     while True:
 
@@ -799,6 +803,7 @@ def main():
             if mask & selectors.EVENT_READ:
                 # Receive the query from the server (in the format "length query")
                 query = recv_query(sock)
+                print("Received query from server")
             
                 # Execute the query on the client's database and send the result to the server
                 tokenised_query = query.split(" ")
@@ -822,8 +827,7 @@ def main():
             if mask & selectors.EVENT_WRITE:
                 if data.msg:
                     sock.send(data.msg)
-                    # print("data.msg:", data.msg)
-                    # print(f"Sent result: {result}")
+                    print("Sent result to server")
                     data.msg = None
 
     sel.unregister(sock)

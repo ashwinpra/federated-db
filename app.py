@@ -44,8 +44,8 @@ def accept_wrapper(sel, sock):
     sel.register(conn, events, data=data)
 
 # Define the server settings
-SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 8002
+SERVER_HOST = "10.145.254.177"
+SERVER_PORT = 8000
 MAX_CLIENTS = 5
 CONN_TIME = 10
 TIMEOUT = 20
