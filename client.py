@@ -10,8 +10,8 @@ import os
 import Crypto.Cipher.AES as AES
 
 # Define the client settings
-SERVER_HOST = "10.145.254.177"
-SERVER_PORT = 8000
+SERVER_HOST = "127.0.0.1"
+SERVER_PORT = 8001
 enc_key = os.urandom(8).hex()
 iv = os.urandom(8).hex()
 
@@ -426,7 +426,8 @@ def calculate_total_yield_for_crop_for_year(connection, db_type, crop_name, year
 
             # Calculate yield for the specified crop for a particular year
             yield_for_year = 0
-            for data in collection.find({"year": year, "crop_name": crop_name}):
+            for data in collection.find({"year": int(year), "crop_name": crop_name}):
+                print(data)
                 yield_for_year += data["yield"]
 
             # Close connection
@@ -662,18 +663,27 @@ def crop_with_highest_yield_for_year(connection, db_type, year):
             db = connection["agricultural_data"]
             collection = db["agricultural_data"]
 
+            print("year:", year)
+
             # Aggregate data to find the crop with highest yield for the specified year
             pipeline = [
-                {"$match": {"year": year}},
+                {"$match": {"year": int(year)}},
                 {"$group": {"_id": "$crop_name", "total_yield": {"$sum": "$yield"}}},
                 {"$sort": {"total_yield": -1}},
                 {"$limit": 1}
             ]
+
+            # print all crops for a particular year
+
             result = list(collection.aggregate(pipeline))
             crop_with_highest_yield = [(str(doc["_id"]), str(doc["total_yield"])) for doc in result]
 
+            print(result)
+
             # Close connection
             connection.close()
+
+            print(crop_with_highest_yield)
 
             return crop_with_highest_yield
 
@@ -760,13 +770,14 @@ def main():
 
     # take type of database as command line argument 
     if len(sys.argv) != 2:
-        print("Usage: python3 client.py <postgres/sqlite/json>")
+        print("Usage: python3 client.py <postgres/sqlite/mongo>")
         sys.exit(1)
 
     db_type = sys.argv[1]
 
     client_id = random.randint(1, 100)
     # Create a socket and connect to the server
+
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((SERVER_HOST, SERVER_PORT))
     client_socket.setblocking(False)
@@ -779,6 +790,7 @@ def main():
     sel.register(client_socket, events, data=data)
 
     # print("key:", enc_key, "iv:", iv)
+
 
     # Send the client ID, key and IV to the server
     msg = f"{client_id} {enc_key} {iv}".encode()
@@ -820,7 +832,7 @@ def main():
                 if(query_num==9):
                     year = tokenised_query[1]
                 result = process_query(db_type, query_num, crop, year)
-                # print("Result:", result)
+                print("Result:", result)
 
                 data.msg = e_cipher.encrypt(pad_message(result).encode())
 

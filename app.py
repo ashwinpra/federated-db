@@ -13,7 +13,7 @@ import Crypto.Cipher.AES as AES
 from queries import queries
 
 # Define the server settings
-SERVER_HOST = "10.145.254.177"
+SERVER_HOST = "10.145.38.202"
 SERVER_PORT = 8000
 MAX_CLIENTS = 5
 CONN_TIME = 10
@@ -65,6 +65,8 @@ def accept_wrapper(sel, sock):
 # Create a socket and bind it to the server address
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((SERVER_HOST, SERVER_PORT))
+# get the IP and port it bound to
+
 server_socket.listen(MAX_CLIENTS)
 
 # Create a selector and register the server socket
