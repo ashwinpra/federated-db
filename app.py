@@ -9,39 +9,8 @@ import selectors
 import types
 import time
 from tabulate import tabulate
-import pickle
+import Crypto.Cipher.AES as AES
 from queries import queries
-
-# Stop accepting new connections
-
-def recv_message(conn):
-    # message will be in the format "message_length client_id message"
-    message = b""
-    while True:
-        try:
-            chunk = conn.recv(1024)
-            if not chunk:
-                break
-            message += chunk
-        except socket.error:
-            print(f"Error: {socket.error}")
-
-        if message.startswith(b""):
-            msg_length, client_id, msg = message.split(b" ", 2)
-            if len(message) - len(str(msg_length.decode())) -len(str(client_id.decode())) - 2 >= int(msg_length):
-                break
-
-    print(msg_length, client_id)
-
-    return client_id.decode(), msg.decode()
-
-def accept_wrapper(sel, sock):
-    conn, addr = sock.accept()
-    print(f"Accepted connection from {addr}")
-    conn.setblocking(False)
-    data = types.SimpleNamespace(msg=b"")
-    events = selectors.EVENT_READ | selectors.EVENT_WRITE
-    sel.register(conn, events, data=data)
 
 # Define the server settings
 SERVER_HOST = "10.145.254.177"
@@ -49,6 +18,50 @@ SERVER_PORT = 8000
 MAX_CLIENTS = 5
 CONN_TIME = 10
 TIMEOUT = 20
+num_clients = 0
+
+def pad_message(message):
+    # Pad the message to be a multiple of 16 bytes
+    return message + " " * (16 - len(message) % 16)
+
+def remove_padding(message):
+    # Remove the padding from the message
+    return message.rstrip()
+
+def recv_message(conn, cipher):
+    # message will be in the format "message"
+    message = b""
+    while True:
+        # receive until the message is complete
+        data = conn.recv(1024)
+        message += data
+        if len(data) < 1024:
+            break
+
+    # print("Received message:", message)
+    decrypted_message = cipher.decrypt(message)
+    decrypted_message = remove_padding(decrypted_message.decode())
+    # print("Decrypted message:", decrypted_message)
+
+    return decrypted_message
+
+def accept_wrapper(sel, sock):
+    global num_clients 
+
+    conn, addr = sock.accept()
+    print(f"Accepted connection from {addr}")
+
+    msg = conn.recv(1024).decode()
+    client_id, key, iv = msg.split(" ")
+
+    num_clients += 1
+
+    conn.setblocking(False)
+    data = types.SimpleNamespace(msg=b"", client_id=client_id, key=key, iv=iv)
+    events = selectors.EVENT_READ | selectors.EVENT_WRITE
+    sel.register(conn, events, data=data)
+
+
 # Create a socket and bind it to the server address
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((SERVER_HOST, SERVER_PORT))
@@ -73,26 +86,35 @@ print("Clients have connected")
 def service_send_message(key, mask, query):
     sock = key.fileobj
     data = key.data
+    key = data.key
+    iv = data.iv
+
+    cipher = AES.new(key.encode(), AES.MODE_CFB, iv.encode())
+    # print("key:", key, "iv:", iv)
 
     if mask & selectors.EVENT_WRITE:
-        data.msg = f"{len(query)} {query}".encode()
+        data.msg = cipher.encrypt(pad_message(query).encode())
         sock.send(data.msg)
-        print(f"Sent query: {query}")
 
 def service_recv_message(key, mask, results):
     sock = key.fileobj
     data = key.data
+    client_id = data.client_id
+    key = data.key
+    iv = data.iv
+
+    cipher = AES.new(key.encode(), AES.MODE_CFB, iv.encode())
 
     if mask & selectors.EVENT_READ:
-        client_id, result = recv_message(sock)
-        print(result)
+        result = recv_message(sock, cipher)
         attribute_names = result.split(" ")[0:2]
         for i in range(2, len(result.split(" ")), 2):
             # break if it is out of bounds
-            if i+2 >= len(result.split(" ")):
+            if i+1 >= len(result.split(" ")):
                 break
-
+            
             results.append({"client_id": client_id, attribute_names[0]: result.split(" ")[i], attribute_names[1]: result.split(" ")[i+1]})
+
 
 def get_query_output(choice, crop, year):
     # Proceed with the normal flow
@@ -140,7 +162,10 @@ def get_query_output(choice, crop, year):
         headers[key] = key
 
     print(tabulate(results, headers=headers))
+
     return results, headers
+
+
 class QueryInterface(customtkinter.CTk):
     def __init__(self):
         super().__init__()
